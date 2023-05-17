@@ -26,14 +26,7 @@ import type {
   ZodStringDef,
   ZodTypeAny,
 } from "./zod.ts";
-import {
-  compact,
-  isNil,
-  mapValues,
-  objectEquals,
-  omit,
-  omitBy,
-} from "./lib/lodash.ts";
+import { compact, isNil, mapValues, objectEquals, omit, omitBy } from "./lib/lodash.ts";
 import {
   OpenAPIComponentObject,
   OpenAPIDefinitions,
@@ -42,11 +35,7 @@ import {
   ZodContentObject,
   ZodRequestBody,
 } from "./openapi_registry.ts";
-import {
-  ConflictError,
-  MissingParameterDataError,
-  UnknownZodTypeError,
-} from "./errors.ts";
+import { ConflictError, MissingParameterDataError, UnknownZodTypeError } from "./errors.ts";
 import { isAnyZodType, isZodType } from "./lib/zod-is-type.ts";
 
 // See https://github.com/colinhacks/zod/blob/9eb7eb136f3e702e86f030e6984ef20d4d8521b6/src/types.ts#L1370
@@ -129,9 +118,7 @@ export class OpenAPIGenerator {
 
     this.definitions.sort((left, right) => {
       const leftIndex = generationOrder.findIndex((type) => type === left.type);
-      const rightIndex = generationOrder.findIndex((type) =>
-        type === right.type
-      );
+      const rightIndex = generationOrder.findIndex((type) => type === right.type);
 
       return leftIndex - rightIndex;
     });
@@ -177,9 +164,7 @@ export class OpenAPIGenerator {
   ): ReferenceObject | undefined {
     const parameterMetadata = schemaMetadata?.param;
 
-    const existingRef = schemaMetadata?.refId
-      ? this.paramRefs[schemaMetadata.refId]
-      : undefined;
+    const existingRef = schemaMetadata?.refId ? this.paramRefs[schemaMetadata.refId] : undefined;
 
     if (!schemaMetadata?.refId || !existingRef) {
       return undefined;
@@ -266,9 +251,7 @@ export class OpenAPIGenerator {
           innerParameterMetadata.in !== location
         ) {
           throw new ConflictError(
-            `Conflicting location for parameter ${
-              innerParameterMetadata.name ?? key
-            }`,
+            `Conflicting location for parameter ${innerParameterMetadata.name ?? key}`,
             {
               key: "in",
               values: [location, innerParameterMetadata.in],
@@ -338,9 +321,7 @@ export class OpenAPIGenerator {
     zodSchema: ZodSchema<any>,
   ): SchemaObject | ReferenceObject {
     const innerSchema = this.unwrapChained(zodSchema);
-    const metadata = zodSchema._def.openapi
-      ? zodSchema._def.openapi
-      : innerSchema._def.openapi;
+    const metadata = zodSchema._def.openapi ? zodSchema._def.openapi : innerSchema._def.openapi;
 
     const refId = metadata?.refId;
 
@@ -371,9 +352,7 @@ export class OpenAPIGenerator {
       }
       : this.toOpenAPISchema(innerSchema, zodSchema.isNullable());
 
-    return metadata
-      ? this.applySchemaMetadata(result, metadata)
-      : omitBy(result as Record<string, unknown>, isNil);
+    return metadata ? this.applySchemaMetadata(result, metadata) : omitBy(result as Record<string, unknown>, isNil);
   }
 
   private generateInnerSchema(
@@ -437,18 +416,12 @@ export class OpenAPIGenerator {
       return [];
     }
 
-    const queryParameters = request.query
-      ? this.generateInlineParameters(request.query, "query")
-      : [];
+    const queryParameters = request.query ? this.generateInlineParameters(request.query, "query") : [];
 
-    const pathParameters = request.params
-      ? this.generateInlineParameters(request.params, "path")
-      : [];
+    const pathParameters = request.params ? this.generateInlineParameters(request.params, "path") : [];
 
-    const headerParameters =
-      request.headers?.flatMap((header) =>
-        this.generateInlineParameters(header, "header")
-      ) ?? [];
+    const headerParameters = request.headers?.flatMap((header) => this.generateInlineParameters(header, "header")) ??
+      [];
 
     return [...pathParameters, ...queryParameters, ...headerParameters];
   }
@@ -488,9 +461,7 @@ export class OpenAPIGenerator {
     content,
     ...rest
   }: ResponseConfig): ResponseObject | ReferenceObject {
-    const responseContent = content
-      ? { content: this.getBodyContent(content) }
-      : {};
+    const responseContent = content ? { content: this.getBodyContent(content) } : {};
 
     return {
       ...rest,
@@ -756,13 +727,9 @@ export class OpenAPIGenerator {
 
       ...(isNullable ? { nullable: true } : {}),
 
-      ...(additionallyRequired.length > 0
-        ? { required: additionallyRequired }
-        : {}),
+      ...(additionallyRequired.length > 0 ? { required: additionallyRequired } : {}),
 
-      ...(unknownKeysOption === "passthrough"
-        ? { additionalProperties: true }
-        : {}),
+      ...(unknownKeysOption === "passthrough" ? { additionalProperties: true } : {}),
     };
 
     if (extendedFrom) {
@@ -828,9 +795,7 @@ export class OpenAPIGenerator {
 
   private getMetadata(zodSchema: ZodSchema<any>) {
     const innerSchema = this.unwrapChained(zodSchema);
-    const metadata = zodSchema._def.openapi
-      ? zodSchema._def.openapi
-      : innerSchema._def.openapi;
+    const metadata = zodSchema._def.openapi ? zodSchema._def.openapi : innerSchema._def.openapi;
 
     return metadata;
   }

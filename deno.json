@@ -1,0 +1,9 @@
+{
+  "fmt": {
+    "include": [
+      "src/",
+      "test/"
+    ],
+    "lineWidth": 120
+  }
+}
