@@ -2,12 +2,12 @@
 import { ParameterObject, SchemaObject } from "./openapi/openapi.ts";
 import { isZodType } from "./lib/zod-is-type.ts";
 
-import { z } from "https://deno.land/x/zod@v3.21.4/mod.ts";
-export * from "https://deno.land/x/zod@v3.21.4/mod.ts";
+import { z } from "https://deno.land/x/zod@v3.22.2/mod.ts";
+export * from "https://deno.land/x/zod@v3.22.2/mod.ts";
 
 extendZodWithOpenApi(z);
 
-declare module "https://deno.land/x/zod@v3.21.4/mod.ts" {
+declare module "https://deno.land/x/zod@v3.22.2/mod.ts" {
   interface ZodTypeDef {
     openapi?: ZodOpenAPIMetadata;
   }
