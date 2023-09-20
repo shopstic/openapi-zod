@@ -3,6 +3,7 @@ import {
   ComponentsObject,
   ContentObject,
   ExternalDocumentationObject,
+  HeadersObject,
   InfoObject,
   OpenapiObject,
   ParameterLocation,
@@ -34,6 +35,7 @@ import {
   RouteConfig,
   ZodContentObject,
   ZodRequestBody,
+  ZodResponseHeadersObject,
 } from "./openapi_registry.ts";
 import { ConflictError, MissingParameterDataError, UnknownZodTypeError } from "./errors.ts";
 import { isAnyZodType, isZodType } from "./lib/zod-is-type.ts";
@@ -458,14 +460,29 @@ export class OpenapiGenerator {
 
   private getResponse({
     content,
+    headers,
     ...rest
   }: ResponseConfig): ResponseObject | ReferenceObject {
     const responseContent = content ? { content: this.getBodyContent(content) } : {};
+    const responseHeaders = headers ? { headers: this.getResponseHeaders(headers) } : {};
 
     return {
       ...rest,
       ...responseContent,
+      ...responseHeaders,
     };
+  }
+
+  private getResponseHeaders(headers: ZodResponseHeadersObject): HeadersObject {
+    return mapValues(headers, (config) => {
+      if (!isAnyZodType(config.schema)) {
+        return config;
+      }
+
+      const schema = this.generateInnerSchema(config.schema);
+
+      return { ...config, schema };
+    });
   }
 
   private getBodyContent(content: ZodContentObject): ContentObject {
@@ -474,7 +491,7 @@ export class OpenapiGenerator {
         return { schema: config.schema };
       }
 
-      const schema = this.generateInnerSchema(config.schema);
+      const schema = this.generateSimpleSchema(config.schema);
 
       return { schema };
     });
@@ -623,7 +640,10 @@ export class OpenapiGenerator {
       const options = [...zodSchema.options.values()];
 
       return {
-        anyOf: options.map((schema) => this.generateInnerSchema(schema)),
+        oneOf: options.map((schema) => this.generateInnerSchema(schema)),
+        discriminator: {
+          propertyName: zodSchema._def.discriminator,
+        },
       };
     }
 

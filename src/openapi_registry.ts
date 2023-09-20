@@ -6,7 +6,6 @@ import {
   ExampleObject,
   ExamplesObject,
   HeaderObject,
-  HeadersObject,
   LinkObject,
   LinksObject,
   OperationObject,
@@ -29,6 +28,15 @@ export interface ZodMediaTypeObject {
   encoding?: EncodingObject;
 }
 
+export interface ZodResponseHeaderObject {
+  description?: string;
+  schema: ZodType<unknown> | SchemaObject | ReferenceObject;
+}
+
+export interface ZodResponseHeadersObject {
+  [headerName: string]: ZodResponseHeaderObject;
+}
+
 export interface ZodContentObject {
   [mediaType: string]: ZodMediaTypeObject;
 }
@@ -41,7 +49,9 @@ export interface ZodRequestBody {
 
 export interface ResponseConfig {
   description: string;
-  headers?: HeadersObject;
+  headers?: {
+    [headerName: string]: ZodResponseHeaderObject;
+  };
   links?: LinksObject;
   content?: ZodContentObject;
 }
