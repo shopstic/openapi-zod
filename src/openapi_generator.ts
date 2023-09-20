@@ -4,11 +4,11 @@ import {
   ContentObject,
   ExternalDocumentationObject,
   InfoObject,
-  OpenAPIObject,
+  OpenapiObject,
   ParameterLocation,
   ParameterObject,
   PathItemObject,
-  PathObject,
+  PathsObject,
   ReferenceObject,
   RequestBodyObject,
   ResponseObject,
@@ -19,7 +19,7 @@ import {
 } from "./openapi/openapi.ts";
 import type {
   ZodObject,
-  ZodOpenAPIMetadata,
+  ZodOpenapiMetadata,
   ZodRawShape,
   ZodSchema,
   ZodString,
@@ -28,8 +28,8 @@ import type {
 } from "./zod.ts";
 import { compact, isNil, mapValues, objectEquals, omit, omitBy } from "./lib/lodash.ts";
 import {
-  OpenAPIComponentObject,
-  OpenAPIDefinitions,
+  OpenapiComponentObject,
+  OpenapiDefinitions,
   ResponseConfig,
   RouteConfig,
   ZodContentObject,
@@ -41,10 +41,10 @@ import { isAnyZodType, isZodType } from "./lib/zod-is-type.ts";
 // See https://github.com/colinhacks/zod/blob/9eb7eb136f3e702e86f030e6984ef20d4d8521b6/src/types.ts#L1370
 type UnknownKeysParam = "passthrough" | "strict" | "strip";
 
-// This is essentially OpenAPIObject without the components and paths keys.
-// Omit does not work, since OpenAPIObject extends ISpecificationExtension
+// This is essentially OpenapiObject without the components and paths keys.
+// Omit does not work, since OpenapiObject extends ISpecificationExtension
 // and is inferred as { [key: number]: any; [key: string]: any }
-interface OpenAPIObjectConfig {
+interface OpenapiObjectConfig {
   openapi: string;
   info: InfoObject;
   servers?: ServerObject[];
@@ -61,21 +61,21 @@ interface ParameterData {
   name?: string;
 }
 
-export class OpenAPIGenerator {
+export class OpenapiGenerator {
   private schemaRefs: Record<string, SchemaObject> = {};
   private paramRefs: Record<string, ParameterObject> = {};
-  private pathRefs: Record<string, Record<string, PathObject>> = {};
+  private pathRefs: Record<string, Record<string, PathsObject>> = {};
   private rawComponents: {
     componentType: string;
     name: string;
-    component: OpenAPIComponentObject;
+    component: OpenapiComponentObject;
   }[] = [];
 
-  constructor(private definitions: OpenAPIDefinitions[]) {
+  constructor(private definitions: OpenapiDefinitions[]) {
     this.sortDefinitions();
   }
 
-  generateDocument(config: OpenAPIObjectConfig): OpenAPIObject {
+  generateDocument(config: OpenapiObjectConfig): OpenapiObject {
     this.definitions.forEach((definition) => this.generateSingle(definition));
 
     return {
@@ -110,7 +110,7 @@ export class OpenAPIGenerator {
   }
 
   private sortDefinitions() {
-    const generationOrder: OpenAPIDefinitions["type"][] = [
+    const generationOrder: OpenapiDefinitions["type"][] = [
       "schema",
       "parameter",
       "route",
@@ -124,7 +124,7 @@ export class OpenAPIGenerator {
     });
   }
 
-  private generateSingle(definition: OpenAPIDefinitions): void {
+  private generateSingle(definition: OpenapiDefinitions): void {
     switch (definition.type) {
       case "parameter":
         this.generateParameterDefinition(definition.schema);
@@ -159,7 +159,7 @@ export class OpenAPIGenerator {
   }
 
   private getParameterRef(
-    schemaMetadata: ZodOpenAPIMetadata | undefined,
+    schemaMetadata: ZodOpenapiMetadata | undefined,
     external?: ParameterData,
   ): ReferenceObject | undefined {
     const parameterMetadata = schemaMetadata?.param;
@@ -315,7 +315,7 @@ export class OpenAPIGenerator {
   }
 
   /**
-   * Generates an OpenAPI SchemaObject or a ReferenceObject with all the provided metadata applied
+   * Generates an Openapi SchemaObject or a ReferenceObject with all the provided metadata applied
    */
   private generateSimpleSchema(
     zodSchema: ZodSchema<any>,
@@ -350,14 +350,14 @@ export class OpenAPIGenerator {
       ? {
         type: metadata?.type,
       }
-      : this.toOpenAPISchema(innerSchema, zodSchema.isNullable());
+      : this.toOpenapiSchema(innerSchema, zodSchema.isNullable());
 
     return metadata ? this.applySchemaMetadata(result, metadata) : omitBy(result as Record<string, unknown>, isNil);
   }
 
   private generateInnerSchema(
     zodSchema: ZodSchema<any>,
-    metadata?: ZodOpenAPIMetadata,
+    metadata?: ZodOpenapiMetadata,
   ): SchemaObject | ReferenceObject {
     const simpleSchema = this.generateSimpleSchema(zodSchema);
 
@@ -420,8 +420,7 @@ export class OpenAPIGenerator {
 
     const pathParameters = request.params ? this.generateInlineParameters(request.params, "path") : [];
 
-    const headerParameters = request.headers?.flatMap((header) => this.generateInlineParameters(header, "header")) ??
-      [];
+    const headerParameters = request.headers ? this.generateInlineParameters(request.headers, "header") : [];
 
     return [...pathParameters, ...queryParameters, ...headerParameters];
   }
@@ -517,7 +516,7 @@ export class OpenAPIGenerator {
     return undefined;
   }
 
-  private toOpenAPISchema(
+  private toOpenapiSchema(
     zodSchema: ZodSchema<any>,
     isNullable: boolean,
   ): SchemaObject {
@@ -597,7 +596,7 @@ export class OpenAPIGenerator {
     }
 
     if (isZodType(zodSchema, "ZodObject")) {
-      return this.toOpenAPIObjectSchema(zodSchema, isNullable);
+      return this.toOpenapiObjectSchema(zodSchema, isNullable);
     }
 
     if (isZodType(zodSchema, "ZodArray")) {
@@ -669,7 +668,7 @@ export class OpenAPIGenerator {
     return zodSchema.isOptional();
   }
 
-  private toOpenAPIObjectSchema(
+  private toOpenapiObjectSchema(
     zodSchema: ZodObject<ZodRawShape>,
     isNullable: boolean,
   ): SchemaObject {
@@ -781,14 +780,14 @@ export class OpenAPIGenerator {
     return schema;
   }
 
-  private buildSchemaMetadata(metadata: ZodOpenAPIMetadata) {
+  private buildSchemaMetadata(metadata: ZodOpenapiMetadata) {
     // A place to omit all custom keys added to the openapi
     // @ts-ignore suppress
     return omitBy(omit(metadata, ["param", "refId", "extendedFrom"]), isNil);
   }
 
   private buildParameterMetadata(
-    metadata: Required<ZodOpenAPIMetadata>["param"],
+    metadata: Required<ZodOpenapiMetadata>["param"],
   ) {
     return omitBy(metadata, isNil);
   }
@@ -802,7 +801,7 @@ export class OpenAPIGenerator {
 
   private applySchemaMetadata(
     initialData: SchemaObject | ParameterObject,
-    metadata: Partial<ZodOpenAPIMetadata>,
+    metadata: Partial<ZodOpenapiMetadata>,
   ): SchemaObject | ReferenceObject {
     return omitBy(
       {

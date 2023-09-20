@@ -9,19 +9,19 @@ extendZodWithOpenApi(z);
 
 declare module "https://deno.land/x/zod@v3.22.2/mod.ts" {
   interface ZodTypeDef {
-    openapi?: ZodOpenAPIMetadata;
+    openapi?: ZodOpenapiMetadata;
   }
 
   // @ts-ignore Ignore
   abstract class ZodSchema<Output, Def extends ZodTypeDef, Input = Output> {
     openapi<T extends ZodSchema<any>>(
       this: T,
-      metadata: Partial<ZodOpenAPIMetadata<z.infer<T>>>,
+      metadata: Partial<ZodOpenapiMetadata<z.infer<T>>>,
     ): T;
   }
 }
 
-export interface ZodOpenAPIMetadata<T = any> extends SchemaObject {
+export interface ZodOpenapiMetadata<T = any> extends SchemaObject {
   refId?: string;
   extendedFrom?: string;
   param?: Partial<ParameterObject> & { example?: T };

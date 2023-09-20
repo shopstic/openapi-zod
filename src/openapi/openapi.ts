@@ -25,7 +25,7 @@ export function addExtension(
   }
 }
 
-export interface OpenAPIObject extends ISpecificationExtension {
+export interface OpenapiObject extends ISpecificationExtension {
   openapi: string;
   info: InfoObject;
   servers?: ServerObject[];
@@ -85,12 +85,6 @@ export interface PathsObject extends ISpecificationExtension {
   // [path: string]: PathItemObject;
   [path: string]: PathItemObject | any; // Hack for allowing ISpecificationExtension
 }
-
-/**
- * @deprecated
- * Create a type alias for backward compatibility
- */
-export type PathObject = PathsObject;
 
 export function getPath(
   pathsObject: PathsObject,

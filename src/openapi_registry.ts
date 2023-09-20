@@ -53,14 +53,14 @@ export interface RouteConfig extends OperationObject {
     body?: ZodRequestBody;
     params?: ZodObject<any>;
     query?: ZodObject<any>;
-    headers?: ZodType<unknown>[];
+    headers?: ZodObject<any>;
   };
   responses: {
     [statusCode: string]: ResponseConfig;
   };
 }
 
-export type OpenAPIComponentObject =
+export type OpenapiComponentObject =
   | SchemaObject
   | ResponseObject
   | ParameterObject
@@ -77,23 +77,23 @@ export type ComponentTypeOf<K extends ComponentTypeKey> = NonNullable<
   ComponentsObject[K]
 >[string];
 
-export type OpenAPIDefinitions =
+export type OpenapiDefinitions =
   | {
     type: "component";
     componentType: ComponentTypeKey;
     name: string;
-    component: OpenAPIComponentObject;
+    component: OpenapiComponentObject;
   }
   | { type: "schema"; schema: ZodSchema<any> }
   | { type: "parameter"; schema: ZodSchema<any> }
   | { type: "route"; route: RouteConfig };
 
-export class OpenAPIRegistry {
-  private _definitions: OpenAPIDefinitions[] = [];
+export class OpenapiRegistry {
+  private _definitions: OpenapiDefinitions[] = [];
 
-  constructor(private parents?: OpenAPIRegistry[]) {}
+  constructor(private parents?: OpenapiRegistry[]) {}
 
-  get definitions(): OpenAPIDefinitions[] {
+  get definitions(): OpenapiDefinitions[] {
     const parentDefinitions = this.parents?.flatMap((par) => par.definitions) ??
       [];
 
@@ -149,11 +149,11 @@ export class OpenAPIRegistry {
   }
 
   /**
-   * Registers a raw OpenAPI component. Use this if you have a simple object instead of a Zod schema.
+   * Registers a raw Openapi component. Use this if you have a simple object instead of a Zod schema.
    *
    * @param type The component type, e.g. `schemas`, `responses`, `securitySchemes`, etc.
    * @param name The name of the object, it is the key under the component
-   *             type in the resulting OpenAPI document
+   *             type in the resulting Openapi document
    * @param component The actual object to put there
    */
   registerComponent<K extends ComponentTypeKey>(
