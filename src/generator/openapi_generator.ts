@@ -17,7 +17,7 @@ import {
   SecurityRequirementObject,
   ServerObject,
   TagObject,
-} from "./openapi/openapi.ts";
+} from "../types/spec/openapi.ts";
 import type {
   ZodObject,
   ZodOpenapiMetadata,
@@ -27,8 +27,8 @@ import type {
   ZodStringDef,
   ZodType,
   ZodTypeAny,
-} from "./zod.ts";
-import { compact, isNil, mapValues, objectEquals, omit, omitBy } from "./lib/lodash.ts";
+} from "../zod.ts";
+import { compact, isNil, mapValues, objectEquals, omit, omitBy } from "./utils.ts";
 import {
   OpenapiComponentObject,
   OpenapiDefinitions,
@@ -37,9 +37,9 @@ import {
   ZodResponseConfig,
   ZodResponseHeadersObject,
   ZodRouteConfig,
-} from "./openapi_registry.ts";
+} from "../openapi_registry.ts";
 import { ConflictError, MissingParameterDataError, UnknownZodTypeError } from "./errors.ts";
-import { isAnyZodType, isZodType } from "./lib/zod-is-type.ts";
+import { isAnyZodType, isZodType } from "../lib/zod_type_check.ts";
 
 // See https://github.com/colinhacks/zod/blob/9eb7eb136f3e702e86f030e6984ef20d4d8521b6/src/types.ts#L1370
 type UnknownKeysParam = "passthrough" | "strict" | "strip";

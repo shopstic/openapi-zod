@@ -1,5 +1,5 @@
 {
-  description = "OpenAPI Zod";
+  description = "Full-stack Zod-based OpenAPI Server + Client";
 
   inputs = {
     hotPot.url = "github:shopstic/nix-hot-pot";

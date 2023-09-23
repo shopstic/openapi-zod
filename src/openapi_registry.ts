@@ -15,9 +15,9 @@ import {
   ResponseObject,
   SchemaObject,
   SecuritySchemeObject,
-} from "./openapi/openapi.ts";
+} from "./types/spec/openapi.ts";
 import type { ZodSchema, ZodType } from "./zod.ts";
-import { ISpecificationExtension } from "./openapi/specification_extensions.ts";
+import { ISpecificationExtension } from "./types/spec/specification_extensions.ts";
 
 type Method = "get" | "post" | "put" | "delete" | "patch";
 

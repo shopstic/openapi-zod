@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { ParameterObject, SchemaObject } from "./openapi/openapi.ts";
-import { isZodType } from "./lib/zod-is-type.ts";
+import { ParameterObject, SchemaObject } from "./types/spec/openapi.ts";
+import { isZodType } from "./lib/zod_type_check.ts";
 
 import { z } from "https://deno.land/x/zod@v3.22.2/mod.ts";
 export * from "https://deno.land/x/zod@v3.22.2/mod.ts";
@@ -108,5 +108,3 @@ export function extendZodWithOpenApi(zod: typeof z) {
     return result;
   };
 }
-
-export * from "./zod_string_like.ts";

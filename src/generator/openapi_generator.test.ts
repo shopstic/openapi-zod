@@ -1,8 +1,8 @@
 import { OpenapiGenerator } from "./openapi_generator.ts";
-import { OpenapiRegistry } from "./openapi_registry.ts";
-import { z } from "./zod.ts";
+import { OpenapiRegistry } from "../openapi_registry.ts";
+import { z } from "../zod.ts";
+import { zsBoolean, zsDate, zsNumber } from "../lib/zod_string_like.ts";
 import { assertEquals } from "https://deno.land/std@0.200.0/assert/assert_equals.ts";
-import { zsBoolean, zsDate, zsNumber } from "./zod_string_like.ts";
 
 Deno.test("Generate OpenAPI docs", () => {
   const registry = new OpenapiRegistry();

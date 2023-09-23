@@ -1,4 +1,4 @@
-import { z, ZodType } from "./zod.ts";
+import { z, ZodType } from "../zod.ts";
 
 export function zsNumber<T extends ZodType>(underlying: T) {
   return z.preprocess((arg) => {
