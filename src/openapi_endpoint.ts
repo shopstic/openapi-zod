@@ -223,6 +223,16 @@ export class OpenapiEndpoints<R> {
   }
 }
 
+export function defineOpenapiEndpoint<P extends string, C extends OpenapiRouteConfig<P>>(endpoint: C): C {
+  return endpoint;
+}
+
+export function defineOpenapiJsonEndpoint<P extends string, J extends OpenapiJsonRouteConfig<P>>(
+  jsonConfig: J,
+): OpenapiJsonRouteConfigToRouteConfig<P, J> {
+  return jsonRouteConfigToRouteConfig(jsonConfig) as OpenapiJsonRouteConfigToRouteConfig<P, J>;
+}
+
 export function transformRecordToStringValues(record: Record<string, unknown>): Record<string, string> {
   return Object.fromEntries(
     Object.entries(record).map(([key, value]) => {

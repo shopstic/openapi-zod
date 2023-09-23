@@ -53,7 +53,7 @@ export interface ZodResponseConfig {
     [headerName: string]: ZodResponseHeaderObject;
   };
   links?: LinksObject;
-  content?: ZodContentObject;
+  content: ZodContentObject;
 }
 
 export interface ZodRouteConfig extends OperationObject {

@@ -320,11 +320,7 @@ export class OpenapiRouter<R> {
 
     this.registry.registerPath({
       ...config,
-      responses: config.responses ?? {
-        200: {
-          description: "OK",
-        },
-      },
+      responses: config.responses ?? {},
     });
 
     return this;

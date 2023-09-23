@@ -1,5 +1,5 @@
-import { zsDate,zsNumber,zsBoolean } from "../src/mod.ts";
-import { OpenapiEndpoints } from "../src/openapi_endpoint.ts";
+import { zsBoolean, zsDate, zsNumber } from "../src/mod.ts";
+import { defineOpenapiEndpoint, defineOpenapiJsonEndpoint, OpenapiEndpoints } from "../src/openapi_endpoint.ts";
 import { OpenapiRegistry } from "../src/openapi_registry.ts";
 import { z } from "../src/zod.ts";
 
@@ -38,143 +38,147 @@ export const NotFoundError = registry.register(
   }),
 );
 
-export const getHealthz = {
+const alivezEndpoint = defineOpenapiEndpoint({
+  method: "get",
+  path: "/alivez",
+  summary: "Liveness check",
+  responses: {
+    200: {
+      description: "OK",
+      headers: {
+        "X-RateLimit-Limit": {
+          schema: zsNumber(z.number().int().positive()),
+          description: "Request limit per hour.",
+        },
+        "X-RateLimit-Remaining": {
+          schema: zsNumber(z.number().int().positive()),
+          description: "The number of requests left for the time window.",
+        },
+        "X-RateLimit-Reset": {
+          schema: DateTime,
+          description: "The UTC date/time at which the current rate limit window resets.",
+        },
+      },
+      content: {
+        "text/plain": {
+          schema: z.literal("OK"),
+        },
+        "application/json": {
+          schema: z.object({
+            isOk: z.boolean(),
+          }),
+        },
+      },
+    },
+  },
+});
+
+const healthzEndpoint = defineOpenapiEndpoint({
   method: "get",
   path: "/healthz",
   summary: "Health check",
-};
+});
 
-const healthEndpoints = new OpenapiEndpoints()
-  .endpoint({
-    method: "get",
-    path: "/alivez",
-    summary: "Liveness check",
-    responses: {
-      200: {
-        description: "OK",
-        headers: {
-          "X-RateLimit-Limit": {
-            schema: zsNumber(z.number().int().positive()),
-            description: "Request limit per hour.",
-          },
-          "X-RateLimit-Remaining": {
-            schema: zsNumber(z.number().int().positive()),
-            description: "The number of requests left for the time window.",
-          },
-          "X-RateLimit-Reset": {
-            schema: DateTime,
-            description: "The UTC date/time at which the current rate limit window resets.",
-          },
-        },
-        content: {
-          "text/plain": {
-            schema: z.literal("OK"),
-          },
-          "application/json": {
-            schema: z.object({
-              isOk: z.boolean(),
-            }),
-          },
+const probingEndpoints = new OpenapiEndpoints()
+  .endpoint(alivezEndpoint)
+  .endpoint(healthzEndpoint);
+
+const getUserByIdEndpoint = defineOpenapiJsonEndpoint({
+  method: "get",
+  path: "/users/{id}",
+  summary: "Get a single user",
+  request: {
+    params: { id: zsNumber(z.number().int().max(999)) },
+  },
+  response: {
+    description: "Object with user data.",
+    body: UserSchema,
+  },
+});
+
+const updateUserByIdEndpoint = defineOpenapiJsonEndpoint({
+  method: "put",
+  path: "/users/{id}",
+  summary: "Update a single user",
+  request: {
+    params: {
+      id: zsNumber(z.number().int()),
+    },
+    query: {
+      dryRun: zsBoolean(z.boolean()),
+      dates: z.array(zsDate(z.date().openapi({ type: "string", format: "date-time" }))).optional(),
+    },
+    headers: {
+      "x-some-uuid": z.string().uuid().min(1),
+      "x-some-date": DateTime,
+    },
+    body: UserSchema,
+  },
+  response: {
+    description: "Object with user data.",
+    body: UserSchema,
+  },
+});
+
+const replaceUserByIdEndpoint = defineOpenapiEndpoint({
+  method: "post",
+  path: "/users/{id}",
+  summary: "Update a single user",
+  request: {
+    params: { id: zsNumber(z.number().int()) },
+    query: { dryRun: zsBoolean(z.boolean()) },
+    headers: {
+      "x-some-uuid": z.string().uuid().min(1),
+      "x-some-date": DateTime,
+    },
+    body: {
+      content: {
+        "application/json": {
+          schema: UserSchema,
         },
       },
     },
-  })
-  .endpoint({
-    method: "get",
-    path: "/healthz",
-    summary: "Health check",
-  });
+  },
+  responses: {
+    200: {
+      description: "Object with user data.",
+      content: {
+        "application/json": {
+          schema: UserSchema,
+        },
+      },
+    },
+    201: {
+      description: "Object with user data.",
+      content: {
+        "application/json": {
+          schema: UserSchema,
+        },
+      },
+    },
+    400: {
+      description: "Access denied",
+      content: {
+        "text/plain": {
+          schema: z.literal("Access denied"),
+        },
+      },
+    },
+    404: {
+      description: "The user is not found",
+      content: {
+        "application/json": {
+          schema: NotFoundError,
+        },
+      },
+    },
+  },
+});
 
 const userEndpoints = new OpenapiEndpoints()
-  .jsonEndpoint({
-    method: "get",
-    path: "/users/{id}",
-    summary: "Get a single user",
-    request: {
-      params: { id: zsNumber(z.number().int().max(999)) },
-    },
-    response: {
-      description: "Object with user data.",
-      body: UserSchema,
-    },
-  })
-  .jsonEndpoint({
-    method: "put",
-    path: "/users/{id}",
-    summary: "Update a single user",
-    request: {
-      params: {
-        id: zsNumber(z.number().int()),
-      },
-      query: {
-        dryRun: zsBoolean(z.boolean()),
-        dates: z.array(zsDate(z.date().openapi({ type: "string", format: "date-time" }))).optional(),
-      },
-      headers: {
-        "x-some-uuid": z.string().uuid().min(1),
-        "x-some-date": DateTime,
-      },
-      body: UserSchema,
-    },
-    response: {
-      description: "Object with user data.",
-      body: UserSchema,
-    },
-  })
-  .endpoint({
-    method: "post",
-    path: "/users/{id}",
-    summary: "Update a single user",
-    request: {
-      params: { id: zsNumber(z.number().int()) },
-      query: { dryRun: zsBoolean(z.boolean()) },
-      headers: {
-        "x-some-uuid": z.string().uuid().min(1),
-        "x-some-date": DateTime,
-      },
-      body: {
-        content: {
-          "application/json": {
-            schema: UserSchema,
-          },
-        },
-      },
-    },
-    responses: {
-      200: {
-        description: "Object with user data.",
-        content: {
-          "application/json": {
-            schema: UserSchema,
-          },
-        },
-      },
-      201: {
-        description: "Object with user data.",
-        content: {
-          "application/json": {
-            schema: UserSchema,
-          },
-        },
-      },
-      400: {
-        description: "Access denied",
-        content: {
-          "text/plain": {
-            schema: z.literal("Access denied"),
-          },
-        },
-      },
-      404: {
-        description: "The user is not found",
-        content: {
-          "application/json": {
-            schema: NotFoundError,
-          },
-        },
-      },
-    },
-  })
+  .endpoint(getUserByIdEndpoint)
+  .endpoint(updateUserByIdEndpoint)
+  .endpoint(replaceUserByIdEndpoint)
   .endpoint({
     method: "get",
     path: "/download/{fileName}.pdf",
@@ -199,4 +203,4 @@ const userEndpoints = new OpenapiEndpoints()
     },
   });
 
-export const endpoints = healthEndpoints.merge(userEndpoints);
+export const endpoints = probingEndpoints.merge(userEndpoints);
