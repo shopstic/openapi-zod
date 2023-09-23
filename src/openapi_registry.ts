@@ -16,7 +16,7 @@ import {
   SchemaObject,
   SecuritySchemeObject,
 } from "./openapi/openapi.ts";
-import type { ZodObject, ZodSchema, ZodType } from "./zod.ts";
+import type { ZodSchema, ZodType } from "./zod.ts";
 import { ISpecificationExtension } from "./openapi/specification_extensions.ts";
 
 type Method = "get" | "post" | "put" | "delete" | "patch";
@@ -47,7 +47,7 @@ export interface ZodRequestBody {
   required?: boolean;
 }
 
-export interface ResponseConfig {
+export interface ZodResponseConfig {
   description: string;
   headers?: {
     [headerName: string]: ZodResponseHeaderObject;
@@ -56,17 +56,17 @@ export interface ResponseConfig {
   content?: ZodContentObject;
 }
 
-export interface RouteConfig extends OperationObject {
+export interface ZodRouteConfig extends OperationObject {
   method: Method;
   path: string;
   request?: {
     body?: ZodRequestBody;
-    params?: ZodObject<any>;
-    query?: ZodObject<any>;
-    headers?: ZodObject<any>;
+    params?: Record<string, ZodType>;
+    query?: Record<string, ZodType>;
+    headers?: Record<string, ZodType>;
   };
   responses: {
-    [statusCode: string]: ResponseConfig;
+    [statusCode: string]: ZodResponseConfig;
   };
 }
 
@@ -96,7 +96,7 @@ export type OpenapiDefinitions =
   }
   | { type: "schema"; schema: ZodSchema<any> }
   | { type: "parameter"; schema: ZodSchema<any> }
-  | { type: "route"; route: RouteConfig };
+  | { type: "route"; route: ZodRouteConfig };
 
 export class OpenapiRegistry {
   private _definitions: OpenapiDefinitions[] = [];
@@ -151,7 +151,7 @@ export class OpenapiRegistry {
   /**
    * Registers a new path that would be generated under paths:
    */
-  registerPath(route: RouteConfig) {
+  registerPath(route: ZodRouteConfig) {
     this._definitions.push({
       type: "route",
       route,

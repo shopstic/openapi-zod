@@ -25,17 +25,18 @@ import type {
   ZodSchema,
   ZodString,
   ZodStringDef,
+  ZodType,
   ZodTypeAny,
 } from "./zod.ts";
 import { compact, isNil, mapValues, objectEquals, omit, omitBy } from "./lib/lodash.ts";
 import {
   OpenapiComponentObject,
   OpenapiDefinitions,
-  ResponseConfig,
-  RouteConfig,
   ZodContentObject,
   ZodRequestBody,
+  ZodResponseConfig,
   ZodResponseHeadersObject,
+  ZodRouteConfig,
 } from "./openapi_registry.ts";
 import { ConflictError, MissingParameterDataError, UnknownZodTypeError } from "./errors.ts";
 import { isAnyZodType, isZodType } from "./lib/zod-is-type.ts";
@@ -209,79 +210,50 @@ export class OpenapiGenerator {
   }
 
   private generateInlineParameters(
-    zodSchema: ZodSchema<any>,
+    params: Record<string, ZodType>,
     location: ParameterLocation,
   ): (ParameterObject | ReferenceObject)[] {
-    const metadata = this.getMetadata(zodSchema);
-    const parameterMetadata = metadata?.param;
+    return Object.entries(params).map(([key, schema]) => {
+      const innerMetadata = this.getMetadata(schema);
 
-    const referencedSchema = this.getParameterRef(metadata, { in: location });
-
-    if (referencedSchema) {
-      return [referencedSchema];
-    }
-
-    if (isZodType(zodSchema, "ZodObject")) {
-      const propTypes = zodSchema._def.shape() as ZodRawShape;
-
-      const parameters = Object.entries(propTypes).map(([key, schema]) => {
-        const innerMetadata = this.getMetadata(schema);
-
-        const referencedSchema = this.getParameterRef(innerMetadata, {
-          in: location,
-          name: key,
-        });
-
-        if (referencedSchema) {
-          return referencedSchema;
-        }
-
-        const innerParameterMetadata = innerMetadata?.param;
-
-        if (
-          innerParameterMetadata?.name &&
-          innerParameterMetadata.name !== key
-        ) {
-          throw new ConflictError(`Conflicting names for parameter`, {
-            key: "name",
-            values: [key, innerParameterMetadata.name],
-          });
-        }
-
-        if (
-          innerParameterMetadata?.in &&
-          innerParameterMetadata.in !== location
-        ) {
-          throw new ConflictError(
-            `Conflicting location for parameter ${innerParameterMetadata.name ?? key}`,
-            {
-              key: "in",
-              values: [location, innerParameterMetadata.in],
-            },
-          );
-        }
-
-        return this.generateParameter(
-          schema.openapi({ param: { name: key, in: location } }),
-        );
+      const referencedSchema = this.getParameterRef(innerMetadata, {
+        in: location,
+        name: key,
       });
 
-      return parameters;
-    }
+      if (referencedSchema) {
+        return referencedSchema;
+      }
 
-    if (parameterMetadata?.in && parameterMetadata.in !== location) {
-      throw new ConflictError(
-        `Conflicting location for parameter ${parameterMetadata.name}`,
-        {
-          key: "in",
-          values: [location, parameterMetadata.in],
-        },
+      const innerParameterMetadata = innerMetadata?.param;
+
+      if (
+        innerParameterMetadata?.name &&
+        innerParameterMetadata.name !== key
+      ) {
+        throw new ConflictError(`Conflicting names for parameter`, {
+          key: "name",
+          values: [key, innerParameterMetadata.name],
+        });
+      }
+
+      if (
+        innerParameterMetadata?.in &&
+        innerParameterMetadata.in !== location
+      ) {
+        throw new ConflictError(
+          `Conflicting location for parameter ${innerParameterMetadata.name ?? key}`,
+          {
+            key: "in",
+            values: [location, innerParameterMetadata.in],
+          },
+        );
+      }
+
+      return this.generateParameter(
+        schema.openapi({ param: { name: key, in: location } }),
       );
-    }
-
-    return [
-      this.generateParameter(zodSchema.openapi({ param: { in: location } })),
-    ];
+    });
   }
 
   private generateParameter(zodSchema: ZodSchema<any>): ParameterObject {
@@ -312,6 +284,7 @@ export class OpenapiGenerator {
       name: paramName,
       schema,
       required,
+      ...metadata.description ? { description: metadata.description } : {},
       ...(paramMetadata ? this.buildParameterMetadata(paramMetadata) : {}),
     };
   }
@@ -412,7 +385,7 @@ export class OpenapiGenerator {
   }
 
   private getParameters(
-    request: RouteConfig["request"] | undefined,
+    request: ZodRouteConfig["request"] | undefined,
   ): (ParameterObject | ReferenceObject)[] {
     if (!request) {
       return [];
@@ -427,7 +400,7 @@ export class OpenapiGenerator {
     return [...pathParameters, ...queryParameters, ...headerParameters];
   }
 
-  private generateSingleRoute(route: RouteConfig) {
+  private generateSingleRoute(route: ZodRouteConfig) {
     const { method, path, request, responses, ...pathItemConfig } = route;
 
     const generatedResponses = mapValues(responses, (response) => {
@@ -462,7 +435,7 @@ export class OpenapiGenerator {
     content,
     headers,
     ...rest
-  }: ResponseConfig): ResponseObject | ReferenceObject {
+  }: ZodResponseConfig): ResponseObject | ReferenceObject {
     const responseContent = content ? { content: this.getBodyContent(content) } : {};
     const responseHeaders = headers ? { headers: this.getResponseHeaders(headers) } : {};
 
@@ -814,9 +787,13 @@ export class OpenapiGenerator {
 
   private getMetadata(zodSchema: ZodSchema<any>) {
     const innerSchema = this.unwrapChained(zodSchema);
-    const metadata = zodSchema._def.openapi ? zodSchema._def.openapi : innerSchema._def.openapi;
+    const metadata = zodSchema._def.openapi ?? innerSchema._def.openapi;
+    const description = zodSchema._def.description ?? innerSchema._def.description;
 
-    return metadata;
+    return {
+      description,
+      ...metadata,
+    };
   }
 
   private applySchemaMetadata(

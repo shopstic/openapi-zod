@@ -1,43 +1,8 @@
 import { OpenapiGenerator } from "./openapi_generator.ts";
 import { OpenapiRegistry } from "./openapi_registry.ts";
-import { z, ZodBoolean, ZodDate, ZodNumber } from "./zod.ts";
+import { z } from "./zod.ts";
 import { assertEquals } from "https://deno.land/std@0.200.0/assert/assert_equals.ts";
-
-function zsNumber(updater: (s: ZodNumber) => ZodNumber = (s) => s) {
-  return z.preprocess((arg) => {
-    if (typeof arg === "number") {
-      return arg;
-    }
-
-    if (typeof arg === "string") {
-      return parseInt(arg, 10);
-    }
-  }, updater(z.number()));
-}
-
-function zsBoolean(updater: (s: ZodBoolean) => ZodBoolean = (s) => s) {
-  return z
-    .preprocess((arg) => {
-      if (typeof arg === "boolean") {
-        return arg;
-      }
-
-      if (typeof arg === "string") {
-        if (arg === "true") return true;
-        if (arg === "false") return false;
-      }
-    }, updater(z.boolean()));
-}
-
-function zsDate(updater: (s: ZodDate) => ZodDate = (s) => s) {
-  return z
-    .preprocess((arg) => {
-      if (arg instanceof Date) {
-        return arg;
-      }
-      if (typeof arg === "string") return new Date(arg);
-    }, updater(z.date()));
-}
+import { zsBoolean, zsDate, zsNumber } from "./zod_string_like.ts";
 
 Deno.test("Generate OpenAPI docs", () => {
   const registry = new OpenapiRegistry();
@@ -55,7 +20,7 @@ Deno.test("Generate OpenAPI docs", () => {
   const UserSchema = registry.register(
     "User",
     z.object({
-      id: zsNumber((s) => s.min(1).max(9999)).openapi({ example: 1212121 }),
+      id: zsNumber(z.number().int().min(1).max(9999).openapi({ example: 1212121 })),
       name: z.string().openapi({ example: "John Doe" }),
       age: z.number().min(1).max(200).openapi({ example: 42 }),
       gender: z.enum(["male", "female", "unknown"]),
@@ -76,7 +41,7 @@ Deno.test("Generate OpenAPI docs", () => {
 
   const DateTime = registry.register(
     "DateTime",
-    zsDate().openapi({ type: "string", format: "date-time" }),
+    zsDate(z.date().openapi({ type: "string", format: "date-time" })),
   );
 
   registry.registerPath({
@@ -84,12 +49,16 @@ Deno.test("Generate OpenAPI docs", () => {
     path: "/users/{id}",
     summary: "Update a single user",
     request: {
-      params: z.object({ id: zsNumber() }),
-      query: z.object({ dryRun: zsBoolean() }),
-      headers: z.object({
-        "x-some-uuid": z.string().uuid().min(1),
+      params: {
+        id: zsNumber(z.number().int().positive()).describe("The user ID, must be a positive integer"),
+      },
+      query: {
+        dryRun: zsBoolean(z.boolean()),
+      },
+      headers: {
+        "x-some-uuid": z.string().uuid().min(1).describe("Some UUID"),
         "x-some-date": DateTime,
-      }),
+      },
       body: {
         content: {
           "application/json": {
@@ -103,11 +72,11 @@ Deno.test("Generate OpenAPI docs", () => {
         description: "Object with user data.",
         headers: {
           "X-RateLimit-Limit": {
-            schema: zsNumber(),
+            schema: zsNumber(z.number().int().positive()),
             description: "Request limit per hour.",
           },
           "X-RateLimit-Remaining": {
-            schema: zsNumber(),
+            schema: zsNumber(z.number().int().positive()),
             description: "The number of requests left for the time window.",
           },
           "X-RateLimit-Reset": {
@@ -190,7 +159,7 @@ Deno.test("Generate OpenAPI docs", () => {
           type: "object",
           properties: {
             id: {
-              type: "number",
+              type: "integer",
               minimum: 1,
               maximum: 9999,
               example: 1212121,
@@ -269,9 +238,11 @@ Deno.test("Generate OpenAPI docs", () => {
               in: "path",
               name: "id",
               schema: {
-                type: "number",
+                type: "integer",
+                minimum: 0,
               },
               required: true,
+              description: "The user ID, must be a positive integer",
             },
             {
               in: "query",
@@ -289,20 +260,13 @@ Deno.test("Generate OpenAPI docs", () => {
                 format: "uuid",
               },
               required: true,
+              description: "Some UUID",
             },
             {
               in: "header",
               name: "x-some-date",
               schema: {
-                allOf: [
-                  {
-                    $ref: "#/components/schemas/DateTime",
-                  },
-                  {
-                    type: "string",
-                    format: "date-time",
-                  },
-                ],
+                $ref: "#/components/schemas/DateTime",
               },
               required: true,
             },
@@ -329,27 +293,21 @@ Deno.test("Generate OpenAPI docs", () => {
               headers: {
                 "X-RateLimit-Limit": {
                   schema: {
-                    type: "number",
+                    type: "integer",
+                    minimum: 0,
                   },
                   description: "Request limit per hour.",
                 },
                 "X-RateLimit-Remaining": {
                   schema: {
-                    type: "number",
+                    type: "integer",
+                    minimum: 0,
                   },
                   description: "The number of requests left for the time window.",
                 },
                 "X-RateLimit-Reset": {
                   schema: {
-                    allOf: [
-                      {
-                        $ref: "#/components/schemas/DateTime",
-                      },
-                      {
-                        type: "string",
-                        format: "date-time",
-                      },
-                    ],
+                    $ref: "#/components/schemas/DateTime",
                   },
                   description: "The UTC date/time at which the current rate limit window resets.",
                 },
